@@ -1,0 +1,97 @@
+<project name="Ser321 Basic Rmi Example" default="targets" basedir=".">
+
+   <!-- set global properties for this build -->
+   <property name="src" value="src" />
+   <property name="build" value="classes" />
+   <property name="lib" value="lib" />
+   <property name="hostId" value="localhost" />
+   <property name="regPort" value="1099" />
+
+   <path id="compile.classpath">
+      <pathelement location="${build}"/>
+   </path>
+
+   <target name="checkos">
+	<condition property="os" value="windows">
+		<os family="windows" />
+	</condition>
+	<condition property="os" value="unix">
+		<os family="unix" />
+	</condition>
+	<condition property="os" value="mac">
+		<os family="mac" />
+	</condition>
+   </target>
+
+   <target name="targets" depends="checkos">
+      <echo message="targets are clean, prepare, compile, server, client"/>
+      <echo message="java home is: ${java.home}"/>
+      <echo message="os family is: ${os}"/>
+      <echo>
+         start server with: ant server -DhostId=192.168.2.2 -DregPort=2222
+      </echo>
+      <echo>
+         start client with: ant client -DhostId=192.168.2.2 -DregPort=2222
+      </echo>
+   </target>
+
+   <target name="prepare">
+      <!-- Create the time stamp -->
+      <tstamp/>
+      <!-- Create the build directory structure used by compile -->
+      <echo message="home defined as: ${home}" />
+      <mkdir dir="${build}" />
+   </target>
+
+   <target name="compile" depends="prepare"
+           description="Compile Java sources">
+      <javac srcdir="${src}"
+             includeantruntime="false"
+             destdir="${build}">
+         <classpath refid="compile.classpath"/>
+      </javac>
+<!--      <rmic classname="personnel.EmpServerImpl" base="${build}">
+             <classpath refid="compile.classpath"/>
+          </rmic> -->
+   </target>
+
+   <target name="client" depends="compile"
+           description="Start client">
+         <echo message="user.dir is: ${user.dir}"/>
+         <echo message="command line client: java -cp classes -Djava.security.policy=policyClient RMIClient ${hostId} ${regPort}" />
+         <java classname="RMIClientGui" fork="yes">
+           <classpath refid="compile.classpath"/>
+<!--           <sysproperty key="java.security.policy" value="policyClient"/> -->
+           <arg value="${hostId}"/> 
+           <arg value="${regPort}"/>
+         </java>
+   </target>
+
+   <target name="server" depends="compile"
+           description="Using parallel task, start server and client">
+     <parallel>
+       <exec dir="${basedir}"
+             executable="rmiregistry">
+         <arg value="${regPort}"/>
+         <env key="CLASSPATH" path="${basedir}/${build}"/>
+       </exec>
+       <sequential>
+         <sleep seconds="10"/>
+         <java classname="personnel.EmpServerImpl" fork="yes">
+<!--           <sysproperty key="java.security.policy" value="policyServer"/> -->
+           <sysproperty key="java.rmi.server.hostname" value="${hostId}"/>
+           <arg value="${hostId}"/> 
+           <arg value="${regPort}"/> 
+           <classpath refid="compile.classpath"/>
+         </java>
+       </sequential>
+     </parallel>
+   </target>
+
+   <target name="clean">
+     <!-- Delete the ${build} directory tree -->
+     <delete dir="${build}" />
+     <delete file="employees.ser" />
+   </target>
+
+</project>
