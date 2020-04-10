@@ -94,6 +94,12 @@
      </if>
    </target>
    
+   <target name="compile" depends="setup.javafx" description="Compile Java sources">
+<javac srcdir="${src}/" includeantruntime="false" destdir="${build}">
+<classpath refid="compile.classpath"/>
+</javac>
+   </target>
+   
 <target name="server" depends="compile"
            description="Using parallel task, start server and client">
      <parallel>
